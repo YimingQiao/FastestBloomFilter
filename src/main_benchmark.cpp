@@ -3,9 +3,11 @@
 #include "register_blocked_BF_64bit.h"
 #include "register_blocked_BF_32bit_Masks.h"
 #include "register_blocked_BF_64bit_Masks.h"
+#include "cache_sectorized_BF.h"
 
 #include <cstdint>
 #include <iostream>
+#include <x86intrin.h>
 
 template <typename BloomFilterType, typename HashType>
 void RunBenchmark(const std::string &title, size_t num_bits_per_key, size_t num_keys, size_t num_lookup_times,
@@ -23,7 +25,7 @@ void RunBenchmark(const std::string &title, size_t num_bits_per_key, size_t num_
 
 	// Lookup
 	const size_t lookupRepeat = num_lookup_times / num_keys;
-	std::vector<uint32_t> out(num_keys);
+	std::vector<uint32_t> out(num_keys, 0);
 	start = __rdtsc();
 	for (size_t r = 0; r < lookupRepeat; r++) {
 		bloom_filters::HashVector(num_keys, lookup_keys.data(), hashes.data());
@@ -48,9 +50,9 @@ void RunBenchmark(const std::string &title, size_t num_bits_per_key, size_t num_
 }
 
 int main() {
-	const size_t num_keys = (1 << 12);
-	const size_t num_bits_per_key = 12;
-	const size_t num_lookup_times = 1 << 20;
+	const size_t num_keys = (1 << 18);
+	const size_t num_bits_per_key = 14;
+	const size_t num_lookup_times = std::max(1UL << 20, num_keys);
 
 	std::cout << "Number of keys: " << num_keys << "\n\n";
 
@@ -64,19 +66,22 @@ int main() {
 		lookup_keys[i] = i + num_keys;
 	}
 
-	RunBenchmark<bloom_filters::RegisterBlockedBF32Bit, uint32_t>(
-	    "32-bit Vectorized Register-Blocked BF", num_bits_per_key, num_keys, num_lookup_times, keys, lookup_keys);
+	// RunBenchmark<bloom_filters::RegisterBlockedBF32Bit, uint32_t>(
+	//     "32-bit Vectorized Register-Blocked BF", num_bits_per_key, num_keys, num_lookup_times, keys, lookup_keys);
 
-	RunBenchmark<bloom_filters::RegisterBlockedBF32BitMasks, uint32_t>(
-	    "32-bit Vectorized Register-Blocked BF with Masks", num_bits_per_key, num_keys, num_lookup_times, keys,
-	    lookup_keys);
+	// RunBenchmark<bloom_filters::RegisterBlockedBF32BitMasks, uint32_t>(
+	//     "32-bit Vectorized Register-Blocked BF with Masks", num_bits_per_key, num_keys, num_lookup_times, keys,
+	//     lookup_keys);
 
-	RunBenchmark<bloom_filters::RegisterBlockedBF64Bit, uint64_t>(
-	    "64-bit Vectorized Register-Blocked BF", num_bits_per_key, num_keys, num_lookup_times, keys, lookup_keys);
+	// RunBenchmark<bloom_filters::RegisterBlockedBF64Bit, uint64_t>(
+	//     "64-bit Vectorized Register-Blocked BF", num_bits_per_key, num_keys, num_lookup_times, keys, lookup_keys);
 
-	RunBenchmark<bloom_filters::RegisterBlockedBF64BitMasks, uint64_t>(
-	    "64-bit Vectorized Register-Blocked BF with Masks", num_bits_per_key, num_keys, num_lookup_times, keys,
-	    lookup_keys);
+	// RunBenchmark<bloom_filters::RegisterBlockedBF64BitMasks, uint64_t>(
+	//     "64-bit Vectorized Register-Blocked BF with Masks", num_bits_per_key, num_keys, num_lookup_times, keys,
+	//     lookup_keys);
+
+	RunBenchmark<bloom_filters::CacheSectorizedBloomFilter, uint64_t>(
+	    "64-bit Vectorized Cache-sectorized BF", num_bits_per_key, num_keys, num_lookup_times, keys, lookup_keys);
 
 	return 0;
 }

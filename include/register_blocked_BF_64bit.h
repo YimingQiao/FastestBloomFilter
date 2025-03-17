@@ -49,6 +49,10 @@ public:
 			uint64_t mask = (1 << (key[i] & 63)) | (1 << ((key[i] >> 6) & 63)) | (1 << ((key[i] >> 12) & 63)) |
 			                (1 << ((key[i] >> 18) & 63));
 			out[i] = (bf[block] & mask) == mask;
+
+			// if (i == 9){
+			// 	std::cout << "key: " << key[i] << " block: " << block << " mask: " << mask << " bf[block]: " << bf[block] << " out: " << out[i] << "\n";
+			// }
 		}
 		return num;
 	}
