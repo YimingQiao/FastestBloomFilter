@@ -50,7 +50,7 @@ void RunBenchmark(const std::string &title, size_t num_bits_per_key, size_t num_
 }
 
 int main() {
-	const size_t num_keys = (1 << 18);
+	const size_t num_keys = (1 << 14);
 	const size_t num_bits_per_key = 14;
 	const size_t num_lookup_times = std::max(1UL << 20, num_keys);
 

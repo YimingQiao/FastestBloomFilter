@@ -47,7 +47,7 @@ public:
 				    (key[i] >> (64 - num_blocks_log - num_sector_per_group_log - j)) & (num_sector_per_group - 1);
 				uint64_t mask = (1 << ((key[i] >> (j * 24)) & 63)) | (1 << ((key[i] >> (j * 24 + 4)) & 63)) |
 				                (1 << ((key[i] >> (j * 24 + 12)) & 63)) | (1 << ((key[i] >> (j * 24 + 18)) & 63));
-				bf[block * num_groups_per_block * num_sector_per_group + j * num_sector_per_group + sector] |= mask;
+				bf[block + j * num_sector_per_group + sector] |= mask;
 			}
 		}
 		return;
