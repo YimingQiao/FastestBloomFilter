@@ -1,0 +1,32 @@
+// filepath: /home/yiming/cwi-projects/FastestBloomFilter/README.md
+# FastestBloomFilter
+
+This repository implements a high-performance Bloom Filter. It aims to provide:
+
+- Efficient insertion of elements.
+- Fast membership checks.
+- Minimal memory usage.
+
+## Getting Started
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/YourUserName/FastestBloomFilter.git
+   ```
+2. Build the project (configure commands as needed):
+   ```bash
+   cd FastestBloomFilter
+   make
+   ```
+
+## Usage
+
+Include or link against the compiled library, then call the Bloom Filter APIs in your code.
+
+## Contributing
+
+Feel free to open issues or submit pull requests for improvements or bug fixes.
+
+## License
+
+Distributed under the MIT License. See [LICENSE](LICENSE) for more details.
