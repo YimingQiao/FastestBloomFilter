@@ -1,4 +1,3 @@
-// filepath: /home/yiming/cwi-projects/FastestBloomFilter/README.md
 # FastestBloomFilter
 
 This repository implements a high-performance Bloom Filter. It aims to provide:
