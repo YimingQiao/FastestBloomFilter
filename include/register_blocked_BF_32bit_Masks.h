@@ -105,9 +105,9 @@ public:
 
 public:
 	explicit RegisterBlockedBF32BitMasks(size_t n_key, uint32_t n_bits_per_key) {
-		uint32_t num_blocks = ((n_key * n_bits_per_key) >> 5) + 1;
-		num_blocks_log = static_cast<uint32_t>(std::log2(num_blocks));
-		num_blocks = std::min(num_blocks, MAX_NUM_BLOCKS);
+		num_blocks = ((n_key * n_bits_per_key) >> 5) + 1;
+		num_blocks_log = static_cast<uint32_t>(std::log2(num_blocks)) + 1;
+		num_blocks = std::min(1U << num_blocks_log, MAX_NUM_BLOCKS);
 
 		blocks.resize(num_blocks);
 		std::cout << "BF Size: " << num_blocks * 4 / 1024 << " KiB\n";
@@ -126,7 +126,7 @@ public:
 	uint32_t LookupInternal(uint32_t num, uint32_t *BF_RESTRICT key, uint32_t *BF_RESTRICT bf,
 	                        uint32_t *BF_RESTRICT out) const {
 		for (uint32_t i = 0; i < num; i++) {
-			uint32_t block = (key[i] >> (32 - num_blocks_log)) & (MAX_NUM_BLOCKS - 1);
+			uint32_t block = (key[i] >> (32 - num_blocks_log)) & (num_blocks - 1);
 			uint32_t mask = masks32_.Mask(key[i]);
 			out[i] = (bf[block] & mask) == mask;
 		}
@@ -135,13 +135,14 @@ public:
 
 	void InsertInternal(uint32_t num, uint32_t *BF_RESTRICT key, uint32_t *BF_RESTRICT bf) const {
 		for (uint32_t i = 0; i < num; i++) {
-			uint32_t block = (key[i] >> (64 - num_blocks_log)) & (MAX_NUM_BLOCKS - 1);
+			uint32_t block = (key[i] >> (64 - num_blocks_log)) & (num_blocks - 1);
 			uint32_t mask = masks32_.Mask(key[i]);
 			bf[block] |= mask;
 		}
 	}
 
 private:
+	uint32_t num_blocks;
 	uint32_t num_blocks_log;
 	std::vector<uint32_t> blocks;
 };

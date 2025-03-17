@@ -33,13 +33,13 @@ void RunBenchmark(const std::string &title, size_t num_bits_per_key, size_t num_
 	double lookup_cpt = static_cast<double>(end - start) / static_cast<double>(num_lookup_times);
 
 	// False-positive rate
-	size_t falsePositives = 0;
+	size_t false_positives = 0;
 	for (size_t i = 0; i < num_keys; i++) {
 		if (out[i]) {
-			falsePositives++;
+			false_positives++;
 		}
 	}
-	double fp_rate = static_cast<double>(falsePositives) / static_cast<double>(num_keys);
+	double fp_rate = static_cast<double>(false_positives) / static_cast<double>(num_keys);
 
 	std::cout << "[" << title << "]\n"
 	          << "Insert took " << insert_cpt << " cycles per tuple\n"
@@ -57,11 +57,11 @@ int main() {
 	// Prepare keys
 	std::vector<uint64_t> keys(num_keys);
 	for (size_t i = 0; i < num_keys; i++) {
-		keys[i] = static_cast<int>(i);
+		keys[i] = i;
 	}
 	std::vector<uint64_t> lookup_keys(num_keys);
 	for (size_t i = 0; i < num_keys; i++) {
-		lookup_keys[i] = static_cast<int>(i + num_keys);
+		lookup_keys[i] = i + num_keys;
 	}
 
 	RunBenchmark<bloom_filters::RegisterBlockedBF32Bit, uint32_t>(
