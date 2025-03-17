@@ -68,8 +68,8 @@ struct BloomFilterMasks32 {
 	static constexpr int kBitsPerMask = 25;
 	static constexpr uint32_t kFullMask = (1U << kBitsPerMask) - 1;
 
-	static constexpr int kMinBitsSet = 3;
-	static constexpr int kMaxBitsSet = 3;
+	static constexpr int kMinBitsSet = 4;
+	static constexpr int kMaxBitsSet = 5;
 
 	static constexpr int kLogNumMasks = 11;
 	static constexpr int kNumMasks = 1 << kLogNumMasks;
