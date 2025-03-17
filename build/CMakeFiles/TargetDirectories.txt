@@ -1,3 +1,0 @@
-/home/yiming/cwi-projects/FastestBloomFilter/build/CMakeFiles/main_benchmark.dir
-/home/yiming/cwi-projects/FastestBloomFilter/build/CMakeFiles/edit_cache.dir
-/home/yiming/cwi-projects/FastestBloomFilter/build/CMakeFiles/rebuild_cache.dir

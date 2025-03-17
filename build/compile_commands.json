@@ -1,7 +1,0 @@
-[
-{
-  "directory": "/home/yiming/cwi-projects/FastestBloomFilter/build",
-  "command": "/usr/bin/clang++ -I/home/yiming/cwi-projects/FastestBloomFilter/include  -march=native -g -std=gnu++14 -o CMakeFiles/main_benchmark.dir/src/main_benchmark.cpp.o -c /home/yiming/cwi-projects/FastestBloomFilter/src/main_benchmark.cpp",
-  "file": "/home/yiming/cwi-projects/FastestBloomFilter/src/main_benchmark.cpp"
-}
-]
