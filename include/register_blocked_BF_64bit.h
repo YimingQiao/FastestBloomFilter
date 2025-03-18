@@ -50,8 +50,10 @@ public:
 			                (1 << ((key[i] >> 18) & 63));
 			out[i] = (bf[block] & mask) == mask;
 
+			// If we add a if here, we will get the correct false-postive rate for the 64-bit BF
 			// if (i == 9){
-			// 	std::cout << "key: " << key[i] << " block: " << block << " mask: " << mask << " bf[block]: " << bf[block] << " out: " << out[i] << "\n";
+			// 	std::cout << "key: " << key[i] << " block: " << block << " mask: " << mask << " bf[block]: " <<
+			// bf[block] << " out: " << out[i] << "\n";
 			// }
 		}
 		return num;

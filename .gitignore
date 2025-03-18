@@ -19,6 +19,7 @@ Thumbs.db
 *.ipr
 *.iws
 .vscode/
+.cache
 
 # Python specific
 __pycache__/
@@ -49,3 +50,6 @@ coverage/
 
 # Dependency directories
 vendor/
+
+# benchmark
+benchmark_results/*
