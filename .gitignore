@@ -53,3 +53,7 @@ vendor/
 
 # benchmark
 benchmark_results/*
+.cache/*
+.idea/*
+cmake-build-debug/*
+cmake-build-release/*

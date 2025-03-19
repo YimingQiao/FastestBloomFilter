@@ -11,7 +11,7 @@
 namespace bloom_filters {
 class RegisterBlockedBF32Bit {
 public:
-	const uint32_t MAX_NUM_BLOCKS = (1 << 16);
+	const uint32_t MAX_NUM_BLOCKS = (1 << 17);
 
 public:
 	explicit RegisterBlockedBF32Bit(size_t n_key, uint32_t n_bits_per_key) {
@@ -36,7 +36,7 @@ public:
 	uint32_t LookupInternal(uint32_t num, uint32_t *BF_RESTRICT key, uint32_t *BF_RESTRICT bf,
 	                        uint32_t *BF_RESTRICT out) const {
 		for (uint32_t i = 0; i < num; i++) {
-			uint32_t block = (key[i] >> (32 - num_blocks_log)) & (num_blocks - 1);
+			uint32_t block = (key[i] >> 15) & (num_blocks - 1);
 			uint32_t mask = (1 << (key[i] & 31)) | (1 << ((key[i] >> 5) & 31)) | (1 << ((key[i] >> 10) & 31));
 			out[i] = (bf[block] & mask) == mask;
 		}
@@ -45,7 +45,7 @@ public:
 
 	void InsertInternal(uint32_t num, uint32_t *BF_RESTRICT key, uint32_t *BF_RESTRICT bf) const {
 		for (uint32_t i = 0; i < num; i++) {
-			uint32_t block = (key[i] >> (64 - num_blocks_log)) & (num_blocks - 1);
+			uint32_t block = (key[i] >> 15) & (num_blocks - 1);
 			uint32_t mask = (1 << (key[i] & 31)) | (1 << ((key[i] >> 5) & 31)) | (1 << ((key[i] >> 10) & 31));
 			bf[block] |= mask;
 		}

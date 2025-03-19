@@ -12,13 +12,13 @@
 namespace bloom_filters {
 class RegisterBlockedBF64Bit {
 public:
-	const uint32_t MAX_NUM_BLOCKS = (1 << 31);
+	const uint64_t MAX_NUM_BLOCKS = (1ULL << 40);
 
 public:
 	explicit RegisterBlockedBF64Bit(size_t n_key, uint32_t n_bits_per_key) {
 		num_blocks = ((n_key * n_bits_per_key) >> 6) + 1;
 		num_blocks_log = static_cast<uint32_t>(std::log2(num_blocks)) + 1;
-		num_blocks = std::min(1U << num_blocks_log, MAX_NUM_BLOCKS);
+		num_blocks = std::min(1UL << num_blocks_log, MAX_NUM_BLOCKS);
 
 		blocks.resize(num_blocks);
 		std::cout << "BF Size: " << num_blocks * 8 / 1024 << " KiB\n";
@@ -36,7 +36,7 @@ public:
 public:
 	void InsertInternal(size_t num, uint64_t *BF_RESTRICT key, uint64_t *BF_RESTRICT bf) const {
 		for (size_t i = 0; i < num; i++) {
-			uint32_t block = (key[i] >> (64 - num_blocks_log)) & (num_blocks - 1);
+			uint32_t block = (key[i] >> 40) & (num_blocks - 1);
 			uint64_t mask = (1 << (key[i] & 63)) | (1 << ((key[i] >> 6) & 63)) | (1 << ((key[i] >> 12) & 63)) |
 			                (1 << ((key[i] >> 18) & 63));
 			bf[block] |= mask;
@@ -45,7 +45,7 @@ public:
 	size_t LookupInternal(size_t num, uint64_t *BF_RESTRICT key, uint64_t *BF_RESTRICT bf,
 	                      uint32_t *BF_RESTRICT out) const {
 		for (size_t i = 0; i < num; i++) {
-			uint32_t block = (key[i] >> (64 - num_blocks_log)) & (num_blocks - 1);
+			uint32_t block = (key[i] >> 40) & (num_blocks - 1);
 			uint64_t mask = (1 << (key[i] & 63)) | (1 << ((key[i] >> 6) & 63)) | (1 << ((key[i] >> 12) & 63)) |
 			                (1 << ((key[i] >> 18) & 63));
 			out[i] = (bf[block] & mask) == mask;

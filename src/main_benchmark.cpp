@@ -84,7 +84,7 @@ void ParseArgs(int argc, char *argv[], size_t &num_keys, size_t &num_bits_per_ke
 int main(int argc, char *argv[]) {
 	size_t num_keys = (1 << 14);
 	size_t num_bits_per_key = 14;
-	size_t num_lookup_times = std::max(1UL << 20, num_keys);
+	size_t num_lookup_times = std::max(1UL << 26, num_keys);
 
 	ParseArgs(argc, argv, num_keys, num_bits_per_key, num_lookup_times);
 

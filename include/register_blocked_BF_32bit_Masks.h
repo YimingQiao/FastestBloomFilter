@@ -101,7 +101,7 @@ const static BloomFilterMasks32 masks32_;
 
 class RegisterBlockedBF32BitMasks {
 public:
-	const uint32_t MAX_NUM_BLOCKS = (1 << 16);
+	const uint32_t MAX_NUM_BLOCKS = (1 << 17);
 
 public:
 	explicit RegisterBlockedBF32BitMasks(size_t n_key, uint32_t n_bits_per_key) {
@@ -126,7 +126,7 @@ public:
 	uint32_t LookupInternal(uint32_t num, uint32_t *BF_RESTRICT key, uint32_t *BF_RESTRICT bf,
 	                        uint32_t *BF_RESTRICT out) const {
 		for (uint32_t i = 0; i < num; i++) {
-			uint32_t block = (key[i] >> (32 - num_blocks_log)) & (num_blocks - 1);
+			uint32_t block = (key[i] >> 15) & (num_blocks - 1);
 			uint32_t mask = masks32_.Mask(key[i]);
 			out[i] = (bf[block] & mask) == mask;
 		}
@@ -135,7 +135,7 @@ public:
 
 	void InsertInternal(uint32_t num, uint32_t *BF_RESTRICT key, uint32_t *BF_RESTRICT bf) const {
 		for (uint32_t i = 0; i < num; i++) {
-			uint32_t block = (key[i] >> (64 - num_blocks_log)) & (num_blocks - 1);
+			uint32_t block = (key[i] >> 15) & (num_blocks - 1);
 			uint32_t mask = masks32_.Mask(key[i]);
 			bf[block] |= mask;
 		}
