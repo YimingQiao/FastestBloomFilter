@@ -59,31 +59,31 @@ public:
 public:
 	void InsertInternal(int num, uint64_t *BF_RESTRICT key, uint32_t *BF_RESTRICT bf) const {
 		for (size_t i = 0; i < num; i++) {
-			uint32_t sector_0 = ((key[i] >> 49) & (num_sectors - 1));
+			uint32_t sector_1 = (((key[i] >> 46) & (num_blocks - 1)) << 4) | ((key[i] >> 43) & 7);
 			uint32_t mask_1 = (1 << ((key[i]) & 31)) | (1 << ((key[i] >> 5) & 31)) | (1 << ((key[i] >> 10) & 31)) |
 			                  (1 << ((key[i] >> 15) & 31));
-			bf[sector_0] |= mask_1;
+			bf[sector_1] |= mask_1;
 
-			uint32_t sector_1 = (((key[i] >> 52) & (num_blocks - 1)) << 3) | ((key[i] >> 46) & 7);
+			uint32_t sector_2 = (((key[i] >> 46) & (num_blocks - 1)) << 4) | ((key[i] >> 40) & 7) | 8;
 			uint32_t mask_2 = (1 << ((key[i] >> 20) & 31)) | (1 << ((key[i] >> 25) & 31)) |
 			                  (1 << ((key[i] >> 30) & 31)) | (1 << ((key[i] >> 35) & 31));
-			bf[sector_1 + 8] |= mask_2;
+			bf[sector_2] |= mask_2;
 		}
 		return;
 	}
 
 	int LookupInternal(int num, uint64_t *BF_RESTRICT key, uint32_t *BF_RESTRICT bf, uint32_t *BF_RESTRICT out) const {
 		for (int i = 0; i < num; i++) {
-			uint32_t sector_0 = ((key[i] >> 49) & (num_sectors - 1));
+			uint32_t sector_1 = (((key[i] >> 46) & (num_blocks - 1)) << 4) | ((key[i] >> 43) & 7);
 			uint32_t mask_1 = (1 << ((key[i]) & 31)) | (1 << ((key[i] >> 5) & 31)) | (1 << ((key[i] >> 10) & 31)) |
 			                  (1 << ((key[i] >> 15) & 31));
-			bool match = (bf[sector_0] & mask_1) == mask_1;
+			bool match_0 = (bf[sector_1] & mask_1) == mask_1;
 
-			uint32_t sector_1 = (((key[i] >> 52) & (num_blocks - 1)) << 3) | ((key[i] >> 46) & 7);
+			uint32_t sector_2 = (((key[i] >> 46) & (num_blocks - 1)) << 4) | ((key[i] >> 40) & 7) | 8;
 			uint32_t mask_2 = (1 << ((key[i] >> 20) & 31)) | (1 << ((key[i] >> 25) & 31)) |
 			                  (1 << ((key[i] >> 30) & 31)) | (1 << ((key[i] >> 35) & 31));
-			bool match1 = (bf[sector_1 + 8] & mask_2) == mask_2;
-			out[i] = match && match1;
+			bool match1 = (bf[sector_2] & mask_2) == mask_2;
+			out[i] = match_0 && match1;
 		}
 		return num;
 	}
