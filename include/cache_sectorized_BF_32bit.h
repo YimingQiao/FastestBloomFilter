@@ -38,12 +38,12 @@ public:
 		num_blocks = std::min(1U << num_blocks_log, MAX_NUM_BLOCKS);
 		num_sectors = num_blocks * 16;
 
-		blocks =
-		    static_cast<uint32_t *>(std::aligned_alloc(64, static_cast<size_t>(num_blocks * 16) * sizeof(uint32_t)));
+		size_t num_uint32 = static_cast<size_t>(num_blocks * 16);
+		blocks = static_cast<uint32_t *>(std::aligned_alloc(64, num_uint32 * sizeof(uint32_t)));
 		if (!blocks) {
 			throw std::bad_alloc();
 		}
-		std::fill(blocks, blocks + static_cast<size_t>(num_blocks * 16), 0);
+		std::fill(blocks, blocks + num_uint32, 0);
 		std::cout << "BF Size: " << num_blocks * 16 * 4 / 1024 << " KiB\n";
 	}
 
@@ -72,6 +72,7 @@ public:
 		return;
 	}
 
+	// | Blocks Bits (18 bits) | Sectors Bits (3 bits) | Sectors Bits (3 bits) | Hash Bits (40 bits) |
 	int LookupInternal(int num, uint64_t *BF_RESTRICT key, uint32_t *BF_RESTRICT bf, uint32_t *BF_RESTRICT out) const {
 		for (int i = 0; i < num; i++) {
 			uint32_t sector_1 = (((key[i] >> 46) & (num_blocks - 1)) << 4) | ((key[i] >> 43) & 7);
