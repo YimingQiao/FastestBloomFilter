@@ -37,13 +37,12 @@ public:
 		num_blocks = std::min(1UL << num_blocks_log, MAX_NUM_BLOCKS);
 		num_sectors = num_blocks * 8;
 
-		blocks =
-		    static_cast<uint64_t *>(std::aligned_alloc(64, static_cast<size_t>(num_blocks * 8) * sizeof(uint64_t)));
+		blocks = static_cast<uint64_t *>(std::aligned_alloc(64, static_cast<size_t>(num_sectors) * sizeof(uint64_t)));
 		if (!blocks) {
 			throw std::bad_alloc();
 		}
-		std::fill(blocks, blocks + static_cast<size_t>(num_blocks * 8), 0);
-		std::cout << "BF Size: " << num_blocks * 8 * 8 / 1024 << " KiB\n";
+		std::fill(blocks, blocks + static_cast<size_t>(num_sectors), 0);
+		std::cout << "BF Size: " << num_sectors * 8 / 1024 << " KiB\n";
 	}
 
 public:
@@ -57,27 +56,31 @@ public:
 
 public:
 	void InsertInternal(int num, uint64_t *BF_RESTRICT key, uint64_t *BF_RESTRICT bf) const {
+#pragma clang loop vectorize_width(16)
 		for (size_t i = 0; i < num; i++) {
-			uint32_t sector_1 = (((key[i] >> 52) & (num_blocks - 1)) << 3) | ((key[i] >> 50) & 3);
+			uint32_t sector_1 = (((key[i] >> 49) & (num_sectors - 1)) & (~7)) | ((key[i] >> 50) & 3);
 			uint64_t mask_1 = (1 << ((key[i]) & 63)) | (1 << ((key[i] >> 6) & 63)) | (1 << ((key[i] >> 12) & 63)) |
 			                  (1 << ((key[i] >> 18) & 63));
 			bf[sector_1] |= mask_1;
 
-			uint32_t sector_2 = (((key[i] >> 52) & (num_blocks - 1)) << 3) | ((key[i] >> 48) & 3) | 4;
+			uint32_t sector_2 = (((key[i] >> 49) & (num_sectors - 1)) & (~7)) | ((key[i] >> 48) & 3) | 4;
 			uint64_t mask_2 = (1 << ((key[i] >> 24) & 63)) | (1 << ((key[i] >> 30) & 63)) |
 			                  (1 << ((key[i] >> 36) & 63)) | (1 << ((key[i] >> 42) & 63));
 			bf[sector_2] |= mask_2;
 		}
 		return;
 	}
+
+	// | Blocks Bits (12 bits) | Sectors Bits (2 bits) | Sectors Bits (2 bits) | Hash Bits (48 bits) |
 	int LookupInternal(int num, uint64_t *BF_RESTRICT key, uint64_t *BF_RESTRICT bf, uint32_t *BF_RESTRICT out) const {
+#pragma clang loop vectorize_width(16)
 		for (int i = 0; i < num; i++) {
-			uint32_t sector_1 = (((key[i] >> 52) & (num_blocks - 1)) << 3) | ((key[i] >> 50) & 3);
+			uint32_t sector_1 = (((key[i] >> 49) & (num_sectors - 1)) & (~7)) | ((key[i] >> 50) & 3);
 			uint64_t mask_1 = (1 << ((key[i]) & 63)) | (1 << ((key[i] >> 6) & 63)) | (1 << ((key[i] >> 12) & 63)) |
 			                  (1 << ((key[i] >> 18) & 63));
 			bool match1 = (bf[sector_1] & mask_1) == mask_1;
 
-			uint32_t sector_2 = (((key[i] >> 52) & (num_blocks - 1)) << 3) | ((key[i] >> 48) & 3) | 4;
+			uint32_t sector_2 = (((key[i] >> 49) & (num_sectors - 1)) & (~7)) | ((key[i] >> 48) & 3) | 4;
 			uint64_t mask_2 = (1 << ((key[i] >> 24) & 63)) | (1 << ((key[i] >> 30) & 63)) |
 			                  (1 << ((key[i] >> 36) & 63)) | (1 << ((key[i] >> 42) & 63));
 			bool match2 = (bf[sector_2] & mask_2) == mask_2;
