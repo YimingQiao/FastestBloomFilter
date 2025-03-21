@@ -22,7 +22,7 @@ public:
 	const uint32_t GROUP_SIZE_LOG = 8;
 	const uint32_t BLOCK_SIZE_LOG = 9;
 
-	const uint32_t MAX_NUM_BLOCKS = (1 << 12);
+	const uint32_t MAX_NUM_BLOCKS = (1 << 18);
 
 	// Number of groups in a block
 	const uint32_t z = 2;
@@ -75,22 +75,20 @@ public:
 	int LookupInternal(int num, uint64_t *BF_RESTRICT key, uint32_t *BF_RESTRICT bf, uint32_t *BF_RESTRICT out) const {
 #pragma clang loop vectorize_width(16)
 		for (int i = 0; i < num; i++) {
-			uint32_t sector_1 = ((key[i] >> 42) & ((num_sectors - 1) & ~15)) | ((key[i] >> 43) & 7);
+			uint32_t key_high = key[i] >> 32;
+
+			uint32_t sector_1 = ((key_high >> 10) & ((num_sectors - 1) & ~15)) | ((key_high >> 11) & 7);
 			uint32_t mask_1 = (1 << ((key[i]) & 31)) | (1 << ((key[i] >> 5) & 31)) | (1 << ((key[i] >> 10) & 31)) |
 			                  (1 << ((key[i] >> 15) & 31));
 			bool match_1 = (bf[sector_1] & mask_1) == mask_1;
 
-			uint32_t sector_2 = ((key[i] >> 42) & ((num_sectors - 1) & ~15)) | ((key[i] >> 40) & 7) | 8;
+			uint32_t sector_2 = ((key_high >> 10) & ((num_sectors - 1) & ~15)) | ((key_high >> 8) & 7) | 8;
 			uint32_t mask_2 = (1 << ((key[i] >> 20) & 31)) | (1 << ((key[i] >> 25) & 31)) |
 			                  (1 << ((key[i] >> 30) & 31)) | (1 << ((key[i] >> 35) & 31));
 			bool match_2 = (bf[sector_2] & mask_2) == mask_2;
-			out[i] = match_1 && match_2;
+			out[i] = match_1 & match_2;
 		}
 		return num;
-	}
-
-	uint32_t GetMask(uint32_t key) const {
-		return (1 << (key & 31)) | (1 << ((key >> 5) & 31)) | (1 << ((key >> 10) & 31)) | (1 << ((key >> 15) & 31));
 	}
 
 private:
