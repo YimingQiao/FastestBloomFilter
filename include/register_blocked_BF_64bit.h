@@ -37,8 +37,8 @@ public:
 	void InsertInternal(size_t num, uint64_t *BF_RESTRICT key, uint64_t *BF_RESTRICT bf) const {
 		for (size_t i = 0; i < num; i++) {
 			uint32_t block = (key[i] >> 40) & (num_blocks - 1);
-			uint64_t mask = (1 << (key[i] & 63)) | (1 << ((key[i] >> 6) & 63)) | (1 << ((key[i] >> 12) & 63)) |
-			                (1 << ((key[i] >> 18) & 63));
+			uint64_t mask = (1ULL << (key[i] & 63)) | (1ULL << ((key[i] >> 6) & 63)) | (1ULL << ((key[i] >> 12) & 63)) |
+			                (1ULL << ((key[i] >> 18) & 63));
 			bf[block] |= mask;
 		}
 	}
@@ -46,15 +46,9 @@ public:
 	                      uint32_t *BF_RESTRICT out) const {
 		for (size_t i = 0; i < num; i++) {
 			uint32_t block = (key[i] >> 40) & (num_blocks - 1);
-			uint64_t mask = (1 << (key[i] & 63)) | (1 << ((key[i] >> 6) & 63)) | (1 << ((key[i] >> 12) & 63)) |
-			                (1 << ((key[i] >> 18) & 63));
+			uint64_t mask = (1ULL << (key[i] & 63)) | (1ULL << ((key[i] >> 6) & 63)) | (1ULL << ((key[i] >> 12) & 63)) |
+			                (1ULL << ((key[i] >> 18) & 63));
 			out[i] = (bf[block] & mask) == mask;
-
-			// If we add a if here, we will get the correct false-postive rate for the 64-bit BF
-			// if (i == 9){
-			// 	std::cout << "key: " << key[i] << " block: " << block << " mask: " << mask << " bf[block]: " <<
-			// bf[block] << " out: " << out[i] << "\n";
-			// }
 		}
 		return num;
 	}

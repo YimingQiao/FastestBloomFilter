@@ -59,13 +59,13 @@ public:
 #pragma clang loop vectorize_width(16)
 		for (size_t i = 0; i < num; i++) {
 			uint32_t sector_1 = (((key[i] >> 49) & (num_sectors - 1)) & (~7)) | ((key[i] >> 50) & 3);
-			uint64_t mask_1 = (1 << ((key[i]) & 63)) | (1 << ((key[i] >> 6) & 63)) | (1 << ((key[i] >> 12) & 63)) |
-			                  (1 << ((key[i] >> 18) & 63));
+			uint64_t mask_1 = (1ULL << ((key[i]) & 63)) | (1ULL << ((key[i] >> 6) & 63)) | (1ULL << ((key[i] >> 12) & 63)) |
+			                  (1ULL << ((key[i] >> 18) & 63));
 			bf[sector_1] |= mask_1;
 
 			uint32_t sector_2 = (((key[i] >> 49) & (num_sectors - 1)) & (~7)) | ((key[i] >> 48) & 3) | 4;
-			uint64_t mask_2 = (1 << ((key[i] >> 24) & 63)) | (1 << ((key[i] >> 30) & 63)) |
-			                  (1 << ((key[i] >> 36) & 63)) | (1 << ((key[i] >> 42) & 63));
+			uint64_t mask_2 = (1ULL << ((key[i] >> 24) & 63)) | (1ULL << ((key[i] >> 30) & 63)) |
+			                  (1ULL << ((key[i] >> 36) & 63)) | (1ULL << ((key[i] >> 42) & 63));
 			bf[sector_2] |= mask_2;
 		}
 		return;
@@ -76,13 +76,13 @@ public:
 #pragma clang loop vectorize_width(16)
 		for (int i = 0; i < num; i++) {
 			uint32_t sector_1 = (((key[i] >> 49) & (num_sectors - 1)) & (~7)) | ((key[i] >> 50) & 3);
-			uint64_t mask_1 = (1 << ((key[i]) & 63)) | (1 << ((key[i] >> 6) & 63)) | (1 << ((key[i] >> 12) & 63)) |
-			                  (1 << ((key[i] >> 18) & 63));
+			uint64_t mask_1 = (1ULL << ((key[i]) & 63)) | (1ULL << ((key[i] >> 6) & 63)) | (1ULL << ((key[i] >> 12) & 63)) |
+			                  (1ULL << ((key[i] >> 18) & 63));
 			bool match1 = (bf[sector_1] & mask_1) == mask_1;
 
 			uint32_t sector_2 = (((key[i] >> 49) & (num_sectors - 1)) & (~7)) | ((key[i] >> 48) & 3) | 4;
-			uint64_t mask_2 = (1 << ((key[i] >> 24) & 63)) | (1 << ((key[i] >> 30) & 63)) |
-			                  (1 << ((key[i] >> 36) & 63)) | (1 << ((key[i] >> 42) & 63));
+			uint64_t mask_2 = (1ULL << ((key[i] >> 24) & 63)) | (1ULL << ((key[i] >> 30) & 63)) |
+			                  (1ULL << ((key[i] >> 36) & 63)) | (1ULL << ((key[i] >> 42) & 63));
 			bool match2 = (bf[sector_2] & mask_2) == mask_2;
 			out[i] = match1 && match2;
 		}
