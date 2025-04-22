@@ -84,7 +84,7 @@ void ParseArgs(int argc, char *argv[], size_t &num_keys, size_t &num_bits_per_ke
 }
 
 int main(int argc, char *argv[]) {
-	size_t num_keys = (1 << 14);
+	size_t num_keys = (1 << 20);
 	size_t num_bits_per_key = 32;
 	size_t num_lookup_times = std::max(1UL << 26, num_keys);
 
@@ -109,7 +109,7 @@ int main(int argc, char *argv[]) {
 	                                                              num_bits_per_key, num_keys, num_lookup_times);
 
 	RunBenchmark<bloom_filters::CacheSectorizedBF32Bit, uint64_t>("32-bit Vectorized Cache-sectorized BF",
-	                                                              	                                                                 num_bits_per_key, num_keys, num_lookup_times);
+	                                                              num_bits_per_key, num_keys, num_lookup_times);
 
 	return 0;
 }

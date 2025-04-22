@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdlib>
+#include <new>
 #ifndef BF_RESTRICT
 #if defined(_MSC_VER)
 #define BF_RESTRICT __restrict
@@ -46,5 +48,48 @@ inline void HashVector(size_t num, const uint64_t *key, uint32_t *hashes) {
 	for (size_t i = 0; i < num; i++) {
 		hashes[i] = MurmurHash32(key[i]);
 	}
+}
+
+// 64-byte aligned allocator for cache-sectorized Bloom filter
+template <typename T, std::size_t Alignment>
+class AlignedAllocator {
+public:
+	using value_type = T;
+
+	AlignedAllocator() noexcept = default;
+
+	template <class U>
+	explicit AlignedAllocator(const AlignedAllocator<U, Alignment> &) noexcept {
+	}
+
+	T *allocate(std::size_t n) {
+		void *ptr = nullptr;
+		if (posix_memalign(&ptr, Alignment, n * sizeof(T)) != 0) {
+			throw std::bad_alloc();
+		}
+		return static_cast<T *>(ptr);
+	}
+
+	void deallocate(T *p, std::size_t) noexcept {
+		std::free(p);
+	}
+
+	template <class U>
+	struct rebind {
+		using other = AlignedAllocator<U, Alignment>;
+	};
+
+	using propagate_on_container_move_assignment = std::true_type;
+	using is_always_equal = std::false_type;
+};
+
+template <class T1, std::size_t A1, class T2, std::size_t A2>
+bool operator==(const AlignedAllocator<T1, A1> &, const AlignedAllocator<T2, A2> &) {
+	return A1 == A2;
+}
+
+template <class T1, std::size_t A1, class T2, std::size_t A2>
+bool operator!=(const AlignedAllocator<T1, A1> &, const AlignedAllocator<T2, A2> &) {
+	return A1 != A2;
 }
 } // namespace bloom_filters

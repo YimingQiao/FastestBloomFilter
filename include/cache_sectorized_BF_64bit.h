@@ -2,98 +2,91 @@
 
 #include "base.h"
 
-#include <cstddef> // for size_t
-#include <iostream>
-#include <vector>
+#include <cmath>
+#include <cstddef>
+#include <cstring>
 #include <cstdint>
+#include <iostream>
+#include <sys/types.h>
+#include <vector>
 
 namespace bloom_filters {
 
-// Each sector has 64 bits, and each block has 8 sectors. We use k = 8 hash functions.
-// We use 12 bits to find the block. For each group in the block, we use 2 bits to find the sector (2x2 in total).
-// Then, 8 * 6 bits are used to find the bit in the sector.
 class CacheSectorizedBF64Bit {
 public:
-	const uint32_t SECTOR_SIZE = 64;
-	const uint32_t GROUP_SIZE = 256;
-	const uint32_t BLOCK_SIZE = 512;
-
-	const uint32_t SECTOR_SIZE_LOG = 6;
-	const uint32_t GROUP_SIZE_LOG = 8;
-	const uint32_t BLOCK_SIZE_LOG = 9;
-
-	const uint64_t MAX_NUM_BLOCKS = (1 << 18);
-
-	// Number of groups in a block
-	const uint32_t z = 2;
-	// Number of sectors in a group
-	const uint32_t s = 4;
-	const uint32_t s_log = 2;
+	const uint64_t MAX_NUM_BLOCKS = (1ULL << 32);
+	static constexpr uint32_t SECTOR_BITS = 64;
+	static constexpr uint32_t BLOCK_BITS = 512;
+	static constexpr uint32_t SECTORS_PER_BLOCK = BLOCK_BITS / SECTOR_BITS; // 8 sectors per block
+	static constexpr uint32_t NUM_BITS = 8;
 
 public:
 	explicit CacheSectorizedBF64Bit(size_t n_key, uint32_t n_bits_per_key) {
-		num_blocks = ((n_key * n_bits_per_key) >> BLOCK_SIZE_LOG) + 1;
-		num_blocks_log = static_cast<uint64_t>(std::log2(num_blocks)) + 1;
-		num_blocks = std::min(1UL << num_blocks_log, MAX_NUM_BLOCKS);
-		num_sectors = num_blocks * 8;
+		size_t raw_blocks = ((n_key * n_bits_per_key + BLOCK_BITS - 1) / BLOCK_BITS);
+		size_t exp = static_cast<size_t>(std::ceil(std::log2(raw_blocks))) + 1;
+		num_blocks = std::min(1UL << exp, MAX_NUM_BLOCKS);
 
-		blocks = static_cast<uint64_t *>(std::aligned_alloc(64, num_blocks * 64UL));
-		if (!blocks) {
-			throw std::bad_alloc();
+		blocks.resize(num_blocks * SECTORS_PER_BLOCK, 0);
+
+		double bits_per_key = static_cast<double>(num_blocks * SECTORS_PER_BLOCK * 64) / static_cast<double>(n_key);
+		std::cout << "CSBF Size: " << (num_blocks * SECTORS_PER_BLOCK * sizeof(uint64_t)) / 1024 << " KiB\n";
+		std::cout << "Bits per key: " << bits_per_key << "\n";
+	}
+
+	inline void Insert(size_t num, uint64_t *BF_RESTRICT key) {
+		uint64_t *BF_RESTRICT bf = blocks.data();
+		for (size_t i = 0; i < num; ++i) {
+			uint64_t full_hash = key[i];
+			uint32_t h1 = static_cast<uint32_t>(full_hash);
+			uint32_t h2 = static_cast<uint32_t>(full_hash >> 32);
+
+			size_t block = (h2 >> 4) & (num_blocks - 1);
+			uint32_t group_a_sector = h1 & 0x3;
+			uint32_t group_b_sector = h1 >> 2 & 0x3;
+			uint64_t *BF_RESTRICT block_base = bf + block * SECTORS_PER_BLOCK;
+
+			uint64_t mask_a = 0;
+			uint64_t mask_b = 0;
+			for (int j = 0; j < 4; ++j) {
+				mask_a |= 1ULL << ((h1 + j * h2) & 0x3F);
+				mask_b |= 1ULL << ((h2 + j * h1) & 0x3F);
+			}
+
+			block_base[group_a_sector] |= mask_a;
+			block_base[4 + group_b_sector] |= mask_b;
 		}
-		std::fill(blocks, blocks + static_cast<size_t>(num_sectors), 0);
-		std::cout << "BF Size: " << num_blocks * 64 / 1024 << " KiB\n";
-		std::cout << "Bits per key: " << static_cast<double>(num_blocks * 512) / static_cast<double>(n_key) << "\n";
 	}
 
-public:
-	inline void Insert(int num, uint64_t *key) {
-		InsertInternal(num, key, blocks);
-	}
+	inline size_t Lookup(size_t num, uint64_t *BF_RESTRICT key, uint32_t *BF_RESTRICT out) const {
+		const uint64_t *BF_RESTRICT bf = blocks.data();
+		for (size_t i = 0; i < num; ++i) {
+			uint64_t full_hash = key[i];
+			uint32_t h1 = static_cast<uint32_t>(full_hash);
+			uint32_t h2 = static_cast<uint32_t>(full_hash >> 32);
 
-	inline size_t Lookup(int num, uint64_t *key, uint32_t *out) {
-		return LookupInternal(num, key, blocks, out);
-	}
+			size_t block = (h2 >> 4) & (num_blocks - 1);
+			uint32_t group_a_sector = h2 & 0x3;
+			uint32_t group_b_sector = h2 >> 2 & 0x3;
+			const uint64_t *BF_RESTRICT block_base = bf + block * SECTORS_PER_BLOCK;
 
-public:
-	void InsertInternal(int num, uint64_t *BF_RESTRICT key, uint64_t *BF_RESTRICT bf) const {
-#pragma clang loop vectorize_width(16)
-		for (size_t i = 0; i < num; i++) {
-			uint32_t sector_1 = (((key[i] >> 49) & (num_sectors - 1)) & (~7)) | ((key[i] >> 50) & 3);
-			uint64_t mask_1 = (1ULL << ((key[i]) & 63)) | (1ULL << ((key[i] >> 6) & 63)) |
-			                  (1ULL << ((key[i] >> 12) & 63)) | (1ULL << ((key[i] >> 18) & 63));
-			bf[sector_1] |= mask_1;
+			uint64_t mask_a = 0;
+			uint64_t mask_b = 0;
+			for (int j = 0; j < 4; ++j) {
+				mask_a |= 1ULL << ((h1 + j * h2) & 0x3F);
+				mask_b |= 1ULL << ((h2 + j * h1) & 0x3F);
+			}
 
-			uint32_t sector_2 = (((key[i] >> 49) & (num_sectors - 1)) & (~7)) | ((key[i] >> 48) & 3) | 4;
-			uint64_t mask_2 = (1ULL << ((key[i] >> 24) & 63)) | (1ULL << ((key[i] >> 30) & 63)) |
-			                  (1ULL << ((key[i] >> 36) & 63)) | (1ULL << ((key[i] >> 42) & 63));
-			bf[sector_2] |= mask_2;
-		}
-		return;
-	}
+			bool match = ((block_base[group_a_sector] & mask_a) ^ mask_a) == 0;
+			match &= ((block_base[4 + group_b_sector] & mask_b) ^ mask_b) == 0;
 
-	// | Blocks Bits (12 bits) | Sectors Bits (2 bits) | Sectors Bits (2 bits) | Hash Bits (48 bits) |
-	int LookupInternal(int num, uint64_t *BF_RESTRICT key, uint64_t *BF_RESTRICT bf, uint32_t *BF_RESTRICT out) const {
-#pragma clang loop vectorize_width(16)
-		for (int i = 0; i < num; i++) {
-			uint32_t sector_1 = (((key[i] >> 49) & (num_sectors - 1)) & (~7)) | ((key[i] >> 50) & 3);
-			uint64_t mask_1 = (1ULL << ((key[i]) & 63)) | (1ULL << ((key[i] >> 6) & 63)) |
-			                  (1ULL << ((key[i] >> 12) & 63)) | (1ULL << ((key[i] >> 18) & 63));
-			bool match1 = (bf[sector_1] & mask_1) == mask_1;
-
-			uint32_t sector_2 = (((key[i] >> 49) & (num_sectors - 1)) & (~7)) | ((key[i] >> 48) & 3) | 4;
-			uint64_t mask_2 = (1ULL << ((key[i] >> 24) & 63)) | (1ULL << ((key[i] >> 30) & 63)) |
-			                  (1ULL << ((key[i] >> 36) & 63)) | (1ULL << ((key[i] >> 42) & 63));
-			bool match2 = (bf[sector_2] & mask_2) == mask_2;
-			out[i] = match1 && match2;
+			out[i] = match;
 		}
 		return num;
 	}
 
 private:
-	size_t num_sectors;
 	size_t num_blocks;
-	size_t num_blocks_log;
-	uint64_t *blocks;
+	std::vector<uint64_t, AlignedAllocator<uint64_t, 64>> blocks;
 };
+
 } // namespace bloom_filters
