@@ -37,12 +37,13 @@ public:
 		num_blocks = std::min(1U << num_blocks_log, MAX_NUM_BLOCKS);
 		num_sectors = num_blocks * 16;
 
-		blocks = static_cast<uint32_t *>(std::aligned_alloc(64, num_sectors * sizeof(uint32_t)));
+		blocks = static_cast<uint32_t *>(std::aligned_alloc(64, num_blocks * 64UL));
 		if (!blocks) {
 			throw std::bad_alloc();
 		}
 		std::fill(blocks, blocks + num_sectors, 0);
-		std::cout << "BF Size: " << num_sectors * 4 / 1024 << " KiB\n";
+		std::cout << "BF Size: " << num_blocks * 64 / 1024 << " KiB\n";
+		std::cout << "Bits per key: " << static_cast<double>(num_blocks * 512) / static_cast<double>(n_key) << "\n";
 	}
 
 public:

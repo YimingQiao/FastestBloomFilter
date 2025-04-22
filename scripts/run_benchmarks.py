@@ -39,7 +39,7 @@ def main():
     
     # Define parameter ranges
     num_keys_powers = [12, 14, 16, 18]   
-    bits_per_key = [14]         
+    bits_per_key = [32]         
     lookup_powers = [24]
     
     print("Starting benchmarks...")

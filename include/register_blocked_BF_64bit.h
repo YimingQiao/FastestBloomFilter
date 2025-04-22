@@ -38,7 +38,7 @@ public:
 		for (size_t i = 0; i < num; i++) {
 			uint32_t block = (key[i] >> 40) & (num_blocks - 1);
 			uint64_t mask = (1ULL << (key[i] & 63)) | (1ULL << ((key[i] >> 6) & 63)) | (1ULL << ((key[i] >> 12) & 63)) |
-			                (1ULL << ((key[i] >> 18) & 63));
+			                (1ULL << ((key[i] >> 18) & 63)) | (1ULL << ((key[i] >> 24) & 63)) | (1ULL << ((key[i] >> 32) & 63));
 			bf[block] |= mask;
 		}
 	}
@@ -47,7 +47,7 @@ public:
 		for (size_t i = 0; i < num; i++) {
 			uint32_t block = (key[i] >> 40) & (num_blocks - 1);
 			uint64_t mask = (1ULL << (key[i] & 63)) | (1ULL << ((key[i] >> 6) & 63)) | (1ULL << ((key[i] >> 12) & 63)) |
-			                (1ULL << ((key[i] >> 18) & 63));
+			                (1ULL << ((key[i] >> 18) & 63)) | (1ULL << ((key[i] >> 24) & 63)) | (1ULL << ((key[i] >> 32) & 63));
 			out[i] = (bf[block] & mask) == mask;
 		}
 		return num;

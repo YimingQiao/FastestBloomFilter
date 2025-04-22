@@ -42,7 +42,8 @@ public:
 			// We have to do some operators on key_high, otherwise the compiler will use 8 * 64 gathers instead of 16 *
 			// 32 gathers.
 			uint32_t block = (key_high >> 1) & (num_blocks - 1);
-			uint32_t mask = (1 << (key_low & 31)) | (1 << ((key_low >> 5) & 31)) | (1 << ((key_low >> 10) & 31));
+			uint32_t mask = (1 << (key_low & 31)) | (1 << ((key_low >> 5) & 31)) | (1 << ((key_low >> 10) & 31)) |
+			                (1 << ((key_low >> 15) & 31)) | (1 << ((key_low >> 20) & 31));
 			out[i] = (bf[block] & mask) == mask;
 		}
 		return num;
@@ -55,7 +56,8 @@ public:
 			// We have to do some operators on key_high, otherwise the compiler will use 8 * 64 gathers instead of 16 *
 			// 32 gathers.
 			uint32_t block = (key_high >> 1) & (num_blocks - 1);
-			uint32_t mask = (1 << (key_low & 31)) | (1 << ((key_low >> 5) & 31)) | (1 << ((key_low >> 10) & 31));
+			uint32_t mask = (1 << (key_low & 31)) | (1 << ((key_low >> 5) & 31)) | (1 << ((key_low >> 10) & 31)) |
+			                (1 << ((key_low >> 15) & 31)) | (1 << ((key_low >> 20) & 31));
 			bf[block] |= mask;
 		}
 	}

@@ -22,7 +22,7 @@ public:
 	const uint32_t GROUP_SIZE_LOG = 8;
 	const uint32_t BLOCK_SIZE_LOG = 9;
 
-	const uint64_t MAX_NUM_BLOCKS = (1 << 12);
+	const uint64_t MAX_NUM_BLOCKS = (1 << 18);
 
 	// Number of groups in a block
 	const uint32_t z = 2;
@@ -37,12 +37,13 @@ public:
 		num_blocks = std::min(1UL << num_blocks_log, MAX_NUM_BLOCKS);
 		num_sectors = num_blocks * 8;
 
-		blocks = static_cast<uint64_t *>(std::aligned_alloc(64, static_cast<size_t>(num_sectors) * sizeof(uint64_t)));
+		blocks = static_cast<uint64_t *>(std::aligned_alloc(64, num_blocks * 64UL));
 		if (!blocks) {
 			throw std::bad_alloc();
 		}
 		std::fill(blocks, blocks + static_cast<size_t>(num_sectors), 0);
-		std::cout << "BF Size: " << num_sectors * 8 / 1024 << " KiB\n";
+		std::cout << "BF Size: " << num_blocks * 64 / 1024 << " KiB\n";
+		std::cout << "Bits per key: " << static_cast<double>(num_blocks * 512) / static_cast<double>(n_key) << "\n";
 	}
 
 public:
@@ -59,8 +60,8 @@ public:
 #pragma clang loop vectorize_width(16)
 		for (size_t i = 0; i < num; i++) {
 			uint32_t sector_1 = (((key[i] >> 49) & (num_sectors - 1)) & (~7)) | ((key[i] >> 50) & 3);
-			uint64_t mask_1 = (1ULL << ((key[i]) & 63)) | (1ULL << ((key[i] >> 6) & 63)) | (1ULL << ((key[i] >> 12) & 63)) |
-			                  (1ULL << ((key[i] >> 18) & 63));
+			uint64_t mask_1 = (1ULL << ((key[i]) & 63)) | (1ULL << ((key[i] >> 6) & 63)) |
+			                  (1ULL << ((key[i] >> 12) & 63)) | (1ULL << ((key[i] >> 18) & 63));
 			bf[sector_1] |= mask_1;
 
 			uint32_t sector_2 = (((key[i] >> 49) & (num_sectors - 1)) & (~7)) | ((key[i] >> 48) & 3) | 4;
@@ -76,8 +77,8 @@ public:
 #pragma clang loop vectorize_width(16)
 		for (int i = 0; i < num; i++) {
 			uint32_t sector_1 = (((key[i] >> 49) & (num_sectors - 1)) & (~7)) | ((key[i] >> 50) & 3);
-			uint64_t mask_1 = (1ULL << ((key[i]) & 63)) | (1ULL << ((key[i] >> 6) & 63)) | (1ULL << ((key[i] >> 12) & 63)) |
-			                  (1ULL << ((key[i] >> 18) & 63));
+			uint64_t mask_1 = (1ULL << ((key[i]) & 63)) | (1ULL << ((key[i] >> 6) & 63)) |
+			                  (1ULL << ((key[i] >> 12) & 63)) | (1ULL << ((key[i] >> 18) & 63));
 			bool match1 = (bf[sector_1] & mask_1) == mask_1;
 
 			uint32_t sector_2 = (((key[i] >> 49) & (num_sectors - 1)) & (~7)) | ((key[i] >> 48) & 3) | 4;
