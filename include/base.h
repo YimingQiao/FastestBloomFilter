@@ -12,6 +12,12 @@
 #endif
 #endif
 
+#if defined(NDEBUG)
+  #define __unroll_loops__ __attribute__((optimize("unroll-loops")))
+#else
+  #define __unroll_loops__
+#endif
+
 #include <cstdint>
 #include <cstddef>
 #include <cmath>
@@ -38,8 +44,22 @@ inline uint32_t MurmurHash32(uint32_t x) {
 	return x;
 }
 
+__unroll_loops__
 inline void HashVector(size_t num, const uint64_t *key, uint64_t *hashes) {
-	for (size_t i = 0; i < num; i++) {
+	constexpr auto vec_alignment = 512;
+	constexpr auto batch_size = 16;
+	size_t unaligned_cnt = std::min(num, (vec_alignment - ((size_t) key) % vec_alignment) / sizeof(uint64_t));
+	for (size_t i = 0; i < unaligned_cnt; i++) {
+		hashes[i] = MurmurHash64(key[i]);
+	}
+	size_t aligned_batch_num = (num - unaligned_cnt) / batch_size;
+	size_t aligned_end = aligned_batch_num * batch_size + unaligned_cnt;
+	for (size_t i = unaligned_cnt; i < aligned_end; i += batch_size) {
+		for (size_t j = 0; j < batch_size; j++) {
+			hashes[i + j] = MurmurHash64(key[i + j]);
+		}
+	}
+	for (size_t i = aligned_end; i < num; i++) {
 		hashes[i] = MurmurHash64(key[i]);
 	}
 }
