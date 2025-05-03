@@ -3,7 +3,7 @@ project(FastestBloomFilter)
 
 set(CMAKE_CXX_STANDARD 17)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=skylake-avx512")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx512f")
 
 include_directories(include)
 

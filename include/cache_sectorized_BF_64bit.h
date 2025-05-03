@@ -1,7 +1,6 @@
 #pragma once
 
 #include "base.h"
-#include "dtl/simd.hpp"
 
 #include <cmath>
 #include <cstddef>
@@ -48,9 +47,9 @@ public:
 
 			uint64_t mask_a = 0;
 			uint64_t mask_b = 0;
-			for (int j = 0; j < 2; ++j) {
-				mask_a |= 1ULL << (h1 >> (6 * j) & 0x3F);
-				mask_b |= 1ULL << (h1 >> (6 * j + 12) & 0x3F);
+			for (int j = 0; j < 4; ++j) {
+				mask_a |= 1ULL << ((h1 + j * h2) & 0x3F);
+				mask_b |= 1ULL << ((h2 + j * h1) & 0x3F);
 			}
 
 			block_base[group_a_sector] |= mask_a;
@@ -58,32 +57,29 @@ public:
 		}
 	}
 
-	__unroll_loops__
 	inline size_t Lookup(size_t num, uint64_t *BF_RESTRICT key, uint32_t *BF_RESTRICT out) const {
 		const uint64_t *BF_RESTRICT bf = blocks.data();
-		for (size_t i = 0; i < num; i += 16) {
+		for (size_t i = 0; i < num; ++i) {
+			uint64_t full_hash = key[i];
+			uint32_t h1 = static_cast<uint32_t>(full_hash);
+			uint32_t h2 = static_cast<uint32_t>(full_hash >> 32);
 
-			uint64_t mask_a[16] = {0};
-			uint64_t mask_b[16] = {0};
-			for (int j = 0; j < 2; ++j) {
-				for (int T = 0; T < 16; T++) {
-						mask_a[T] |= 1ULL << (key[i + T] >> (6 * j) & 0x3F);
-						mask_b[T] |= 1ULL << (key[i + T] >> (6 * j + 12) & 0x3F);
-				}
-			}	
+			size_t block = (h2 >> 4) & (num_blocks - 1);
+			uint32_t group_a_sector = h2 & 0x3;
+			uint32_t group_b_sector = h2 >> 2 & 0x3;
+			const uint64_t *BF_RESTRICT block_base = bf + block * SECTORS_PER_BLOCK;
 
-			for (int T = 0; T < 16; T++) {
-				uint32_t h2 = key[i + T] >> 32;
-				size_t block = (h2 >> 4) & (num_blocks - 1);
-				uint32_t group_a_sector = h2 & 0x3;
-				uint32_t group_b_sector = h2 >> 2 & 0x3;
-				const uint64_t *BF_RESTRICT block_base = bf + block * SECTORS_PER_BLOCK;
-				bool match = ((block_base[group_a_sector] & mask_a[T]) ^ mask_a[T]) == 0;
-				match &= ((block_base[4 + group_b_sector] & mask_b[T]) ^ mask_b[T]) == 0;
-				out[i + T] = match;
+			uint64_t mask_a = 0;
+			uint64_t mask_b = 0;
+			for (int j = 0; j < 4; ++j) {
+				mask_a |= 1ULL << ((h1 + j * h2) & 0x3F);
+				mask_b |= 1ULL << ((h2 + j * h1) & 0x3F);
 			}
-			
 
+			bool match = ((block_base[group_a_sector] & mask_a) ^ mask_a) == 0;
+			match &= ((block_base[4 + group_b_sector] & mask_b) ^ mask_b) == 0;
+
+			out[i] = match;
 		}
 		return num;
 	}
@@ -92,5 +88,4 @@ private:
 	size_t num_blocks;
 	std::vector<uint64_t, AlignedAllocator<uint64_t, 64>> blocks;
 };
-
 } // namespace bloom_filters
