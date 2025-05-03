@@ -88,5 +88,4 @@ private:
 	size_t num_blocks;
 	std::vector<uint64_t, AlignedAllocator<uint64_t, 64>> blocks;
 };
-
 } // namespace bloom_filters
