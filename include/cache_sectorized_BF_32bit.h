@@ -16,11 +16,11 @@ public:
 
 public:
 	explicit CacheSectorizedBF32Bit(size_t n_key, uint32_t n_bits_per_key) {
-		num_blocks_ = ((n_key * n_bits_per_key) >> 5) + 1;
-		num_blocks_log_ = static_cast<uint32_t>(std::log2(num_blocks_)) + 1;
-		num_blocks_ = std::min(1U << num_blocks_log_, MAX_NUM_BLOCKS);
-		blocks_.resize(num_blocks_);
-		std::cout << "BF Size: " << num_blocks_ * 4 / 1024 << " KiB\n";
+		num_blocks = ((n_key * n_bits_per_key) >> 5) + 1;
+		num_blocks_log = static_cast<uint32_t>(std::log2(num_blocks)) + 1;
+		num_blocks = std::min(1U << num_blocks_log, MAX_NUM_BLOCKS);
+		blocks_.resize(num_blocks);
+		std::cout << "BF Size: " << num_blocks * 4 / 1024 << " KiB\n";
 	}
 
 public:
@@ -48,7 +48,7 @@ private:
 	inline uint32_t GetBlock1(uint32_t key_lo, uint32_t key_hi) const {
 		// block: 13 bits in key_lo and 9 bits in key_hi
 		// sector 1: 4 bits in key_lo
-		return ((key_lo & ((1 << 17) - 1)) + ((key_hi << 14) & (((1 << 9) - 1) << 17))) & (num_blocks_ - 1);
+		return ((key_lo & ((1 << 17) - 1)) + ((key_hi << 14) & (((1 << 9) - 1) << 17))) & (num_blocks - 1);
 	}
 
 	inline uint32_t GetBlock2(uint32_t key_hi, uint32_t block1) const {
@@ -111,7 +111,7 @@ private:
 	}
 
 	inline void CacheSectorizedInsert(size_t num, uint64_t *BF_RESTRICT key64, uint32_t *BF_RESTRICT bf) {
-		uint32_t *BF_RESTRICT key = reinterpret_cast<uint32_t * BF_RESTRICT>(key64);
+		const uint32_t *BF_RESTRICT key = reinterpret_cast<const uint32_t * BF_RESTRICT>(key64);
 
 		// align the address of key
 		size_t unaligned_num = (SIMD_ALIGNMENT - size_t(key) % SIMD_ALIGNMENT) / sizeof(uint64_t);
@@ -151,8 +151,8 @@ private:
 		}
 	}
 
-	uint32_t num_blocks_;
-	uint32_t num_blocks_log_;
+	uint32_t num_blocks;
+	uint32_t num_blocks_log;
 	std::vector<uint32_t, AlignedAllocator<uint32_t, SIMD_ALIGNMENT>> blocks_;
 };
 } // namespace bloom_filters
