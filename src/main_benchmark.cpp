@@ -48,9 +48,9 @@ void RunBenchmark(const std::string &title, size_t num_bits_per_key, size_t num_
 			}
 		}
 		if (positives != num_keys) {
-			std::cout << "ERROR: Correctness check failed! Passed queries: " << positives << "/" << num_keys << std::endl; 
+			std::cout << "ERROR: Correctness check failed! Passed queries: " << positives << "/" << num_keys
+			          << std::endl;
 		}
-
 	}
 
 	// Lookup
@@ -102,8 +102,8 @@ void ParseArgs(int argc, char *argv[], size_t &num_keys, size_t &num_bits_per_ke
 }
 
 int main(int argc, char *argv[]) {
-	size_t num_keys = (1 << 20);
-	size_t num_bits_per_key = 32;
+	size_t num_keys = (1 << 15);
+	size_t num_bits_per_key = 16;
 	size_t num_lookup_times = std::max(1UL << 26, num_keys);
 
 	ParseArgs(argc, argv, num_keys, num_bits_per_key, num_lookup_times);
@@ -123,13 +123,15 @@ int main(int argc, char *argv[]) {
 	RunBenchmark<bloom_filters::RegisterBlockedBF2x32Bit, uint64_t>("2x32-bit Vectorized Register-Blocked BF",
 	                                                                num_bits_per_key, num_keys, num_lookup_times);
 
-	RunBenchmark<bloom_filters::CacheSectorizedBF64Bit, uint64_t>("64-bit Vectorized Cache-sectorized BF",
-	                                                              num_bits_per_key, num_keys, num_lookup_times);
+	// RunBenchmark<bloom_filters::CacheSectorizedBF64Bit, uint64_t>("64-bit Vectorized Cache-sectorized BF",
+	//                                                               num_bits_per_key, num_keys, num_lookup_times);
 
 	RunBenchmark<bloom_filters::CacheSectorizedBF32Bit, uint64_t>("32-bit Vectorized Cache-sectorized BF",
 	                                                              num_bits_per_key, num_keys, num_lookup_times);
 
-	RunBenchmark<bloom_filters::NewCacheSectorizedBF32Bit, uint64_t>("New 32-bit Vectorized Cache-sectorized BF (based on Peter's version)",
-		num_bits_per_key, num_keys, num_lookup_times);
+	RunBenchmark<bloom_filters::NewCacheSectorizedBF32Bit, uint64_t>(
+	    "New 32-bit Vectorized Cache-sectorized BF (based on Peter's version)", num_bits_per_key, num_keys,
+	    num_lookup_times);
+
 	return 0;
 }
