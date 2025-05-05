@@ -79,6 +79,8 @@ private:
 
 		// align the address of key
 		size_t unaligned_num = (SIMD_ALIGNMENT - size_t(key) % SIMD_ALIGNMENT) / sizeof(uint64_t);
+		unaligned_num = std::min<size_t>(unaligned_num, num);
+		
 		for (size_t i = 0; i < unaligned_num; i++) {
 			out[i] = LookupOne(key[i * 2], key[i * 2 + 1], bf);
 		}
@@ -115,6 +117,8 @@ private:
 
 		// align the address of key
 		size_t unaligned_num = (SIMD_ALIGNMENT - size_t(key) % SIMD_ALIGNMENT) / sizeof(uint64_t);
+		unaligned_num = std::min<size_t>(unaligned_num, num);
+
 		for (size_t i = 0; i < unaligned_num; i++) {
 			InsertOne(key[i + i], key[i + i + 1], bf);
 		}
