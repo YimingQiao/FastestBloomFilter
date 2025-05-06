@@ -10,7 +10,7 @@
 namespace bloom_filters {
 class CacheSectorizedBF32Bit {
 public:
-	const uint32_t MAX_NUM_BLOCKS = (1 << 24);
+	const uint32_t MAX_NUM_BLOCKS = (1 << 26);
 	static constexpr auto SIMD_BATCH_SIZE = 32;
 	static constexpr auto SIMD_ALIGNMENT = 64;
 
@@ -80,9 +80,13 @@ private:
 		// align the address of key
 		size_t unaligned_num = (SIMD_ALIGNMENT - size_t(key) % SIMD_ALIGNMENT) / sizeof(uint64_t);
 		unaligned_num = std::min<size_t>(unaligned_num, num);
-		
+
 		for (size_t i = 0; i < unaligned_num; i++) {
 			out[i] = LookupOne(key[i * 2], key[i * 2 + 1], bf);
+		}
+
+		if (num == unaligned_num) {
+			return num;
 		}
 
 		// auto vectorization
@@ -107,7 +111,7 @@ private:
 
 		// unaligned tail
 		for (size_t i = aligned_end; i < num; i++) {
-			out[i] = LookupOne(key[i * 2], key[i * 2 + 1], bf);
+			out[i] = LookupOne(key[i + i], key[i + i + 1], bf);
 		}
 		return num;
 	}
@@ -121,6 +125,10 @@ private:
 
 		for (size_t i = 0; i < unaligned_num; i++) {
 			InsertOne(key[i + i], key[i + i + 1], bf);
+		}
+
+		if (num == unaligned_num) {
+			return;
 		}
 
 		// auto vectorization
@@ -151,7 +159,7 @@ private:
 
 		// unaligned tail
 		for (size_t i = aligned_end; i < num; i++) {
-			InsertOne(key[i * 2], key[i * 2 + 1], bf);
+			InsertOne(key[i + i], key[i + i + 1], bf);
 		}
 	}
 
