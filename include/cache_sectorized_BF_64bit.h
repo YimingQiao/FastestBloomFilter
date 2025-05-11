@@ -24,7 +24,7 @@ public:
 	explicit CacheSectorizedBF64Bit(size_t n_key, uint32_t n_bits_per_key) {
 		size_t raw_blocks = ((n_key * n_bits_per_key + BLOCK_BITS - 1) / BLOCK_BITS);
 		size_t exp = static_cast<size_t>(std::ceil(std::log2(raw_blocks))) + 1;
-		num_blocks = std::min(1UL << exp, MAX_NUM_BLOCKS);
+		num_blocks = std::min(1ULL << exp, MAX_NUM_BLOCKS);
 
 		blocks.resize(num_blocks * SECTORS_PER_BLOCK, 0);
 

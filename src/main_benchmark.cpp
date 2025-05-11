@@ -10,7 +10,20 @@
 
 #include <cstdint>
 #include <iostream>
+#include <chrono> // added for cross-platform timing
+#ifdef __x86_64__
 #include <x86intrin.h>
+#endif
+
+// Insert the GetCycleCount helper
+uint64_t GetCycleCount() {
+#ifdef __x86_64__
+	return __rdtsc();
+#else
+	auto now = std::chrono::high_resolution_clock::now();
+	return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count());
+#endif
+}
 
 template <typename BloomFilterType, typename HashType>
 void RunBenchmark(const std::string &title, size_t num_bits_per_key, size_t num_keys, size_t num_lookup_times) {
@@ -30,10 +43,10 @@ void RunBenchmark(const std::string &title, size_t num_bits_per_key, size_t num_
 	std::vector<HashType> hashes(num_keys);
 
 	// Insert
-	uint64_t start = __rdtsc();
+	uint64_t start = GetCycleCount(); // replaced __rdtsc() with GetCycleCount()
 	bloom_filters::HashVector(num_keys, keys.data(), hashes.data());
 	bf.Insert(num_keys, hashes.data());
-	uint64_t end = __rdtsc();
+	uint64_t end = GetCycleCount(); // replaced __rdtsc() with GetCycleCount()
 	double insert_cpt = static_cast<double>(end - start) / static_cast<double>(num_keys);
 
 	// Correctness Check
@@ -56,12 +69,12 @@ void RunBenchmark(const std::string &title, size_t num_bits_per_key, size_t num_
 	// Lookup
 	const size_t lookupRepeat = std::max(num_lookup_times / num_keys, 1UL);
 	std::vector<uint32_t> out(num_keys, 0);
-	start = __rdtsc();
+	start = GetCycleCount(); // replaced __rdtsc() with GetCycleCount()
 	for (size_t r = 0; r < lookupRepeat; r++) {
 		bloom_filters::HashVector(num_keys, lookup_keys.data(), hashes.data());
 		bf.Lookup(num_keys, hashes.data(), out.data());
 	}
-	end = __rdtsc();
+	end = GetCycleCount(); // replaced __rdtsc() with GetCycleCount()
 	double lookup_cpt = static_cast<double>(end - start) / static_cast<double>(num_lookup_times);
 
 	// False-positive rate
