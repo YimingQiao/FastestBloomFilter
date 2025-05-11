@@ -11,7 +11,7 @@ namespace bloom_filters {
 class CacheSectorizedBF32Bit {
 public:
 	const uint32_t MAX_NUM_BLOCKS = (1 << 26);
-	static constexpr auto SIMD_BATCH_SIZE = 32;
+	static constexpr auto SIMD_BATCH_SIZE = 16;
 	static constexpr auto SIMD_ALIGNMENT = 64;
 
 public:
@@ -76,75 +76,44 @@ private:
 	uint32_t CacheSectorizedLookup(int num, const uint64_t *BF_RESTRICT key64, const uint32_t *BF_RESTRICT bf,
 	                               uint32_t *BF_RESTRICT out) const {
 		const uint32_t *BF_RESTRICT key = reinterpret_cast<const uint32_t * BF_RESTRICT>(key64);
+		for (int i = 0; i + SIMD_BATCH_SIZE <= num; i += SIMD_BATCH_SIZE) {
+			uint32_t block1[SIMD_BATCH_SIZE], mask1[SIMD_BATCH_SIZE];
+			uint32_t block2[SIMD_BATCH_SIZE], mask2[SIMD_BATCH_SIZE];
 
-		// align the address of key
-		size_t unaligned_num = (SIMD_ALIGNMENT - size_t(key) % SIMD_ALIGNMENT) / sizeof(uint64_t);
-		unaligned_num = std::min<size_t>(unaligned_num, num);
-
-		for (size_t i = 0; i < unaligned_num; i++) {
-			out[i] = LookupOne(key[i * 2], key[i * 2 + 1], bf);
-		}
-
-		if (num == unaligned_num) {
-			return num;
-		}
-
-		// auto vectorization
-		size_t aligned_end = (num - unaligned_num) / SIMD_BATCH_SIZE * SIMD_BATCH_SIZE + unaligned_num;
-		uint32_t *BF_RESTRICT aligned_key =
-		    reinterpret_cast<uint32_t * BF_RESTRICT>(BF_ASSUME_ALIGNED(&key[unaligned_num * 2]));
-
-		for (int i = 0; i < aligned_end - unaligned_num; i += SIMD_BATCH_SIZE) {
-#pragma clang loop vectorize(enable) unroll(enable) interleave(enable)
+			// #pragma clang loop vectorize(enable) unroll(enable) interleave(enable)
 			for (int j = 0; j < SIMD_BATCH_SIZE; j++) {
 				int p = i + j;
-				uint32_t key_lo = aligned_key[p + p];
-				uint32_t key_hi = aligned_key[p + p + 1];
-				uint32_t block1 = GetBlock1(key_lo, key_hi);
-				uint32_t mask1 = GetMask1(key_lo);
-				uint32_t block2 = GetBlock2(key_hi, block1);
-				uint32_t mask2 = GetMask2(key_hi);
+				uint32_t key_lo = key[p + p];
+				uint32_t key_hi = key[p + p + 1];
+				block1[j] = GetBlock1(key_lo, key_hi);
+				mask1[j] = GetMask1(key_lo);
+				block2[j] = GetBlock2(key_hi, block1[j]);
+				mask2[j] = GetMask2(key_hi);
+			}
 
-				out[i + unaligned_num + j] = ((bf[block1] & mask1) == mask1) & ((bf[block2] & mask2) == mask2);
+			for (int j = 0; j < SIMD_BATCH_SIZE; j++) {
+				out[i + j] = ((bf[block1[j]] & mask1[j]) == mask1[j]) & ((bf[block2[j]] & mask2[j]) == mask2[j]);
 			}
 		}
 
 		// unaligned tail
-		for (size_t i = aligned_end; i < num; i++) {
+		for (int i = num & ~(SIMD_BATCH_SIZE - 1); i < num; i++) {
 			out[i] = LookupOne(key[i + i], key[i + i + 1], bf);
 		}
 		return num;
 	}
 
-	inline void CacheSectorizedInsert(size_t num, uint64_t *BF_RESTRICT key64, uint32_t *BF_RESTRICT bf) {
+	inline void CacheSectorizedInsert(int num, uint64_t *BF_RESTRICT key64, uint32_t *BF_RESTRICT bf) {
 		const uint32_t *BF_RESTRICT key = reinterpret_cast<const uint32_t * BF_RESTRICT>(key64);
-
-		// align the address of key
-		size_t unaligned_num = (SIMD_ALIGNMENT - size_t(key) % SIMD_ALIGNMENT) / sizeof(uint64_t);
-		unaligned_num = std::min<size_t>(unaligned_num, num);
-
-		for (size_t i = 0; i < unaligned_num; i++) {
-			InsertOne(key[i + i], key[i + i + 1], bf);
-		}
-
-		if (num == unaligned_num) {
-			return;
-		}
-
-		// auto vectorization
-		size_t aligned_end = (num - unaligned_num) / SIMD_BATCH_SIZE * SIMD_BATCH_SIZE + unaligned_num;
-		uint32_t *BF_RESTRICT aligned_key =
-		    reinterpret_cast<uint32_t * BF_RESTRICT>(BF_ASSUME_ALIGNED(&key[unaligned_num * 2]));
-
-		for (int i = 0; i < aligned_end - unaligned_num; i += SIMD_BATCH_SIZE) {
+		for (int i = 0; i + SIMD_BATCH_SIZE <= num; i += SIMD_BATCH_SIZE) {
 			uint32_t block1[SIMD_BATCH_SIZE], mask1[SIMD_BATCH_SIZE];
 			uint32_t block2[SIMD_BATCH_SIZE], mask2[SIMD_BATCH_SIZE];
 
-#pragma clang loop vectorize(enable) unroll(enable) interleave(enable)
+			// #pragma clang loop vectorize(enable) unroll(enable) interleave(enable)
 			for (int j = 0; j < SIMD_BATCH_SIZE; j++) {
 				int p = i + j;
-				uint32_t key_lo = aligned_key[p + p];
-				uint32_t key_hi = aligned_key[p + p + 1];
+				uint32_t key_lo = key[p + p];
+				uint32_t key_hi = key[p + p + 1];
 				block1[j] = GetBlock1(key_lo, key_hi);
 				mask1[j] = GetMask1(key_lo);
 				block2[j] = GetBlock2(key_hi, block1[j]);
@@ -158,7 +127,7 @@ private:
 		}
 
 		// unaligned tail
-		for (size_t i = aligned_end; i < num; i++) {
+		for (int i = num & ~(SIMD_BATCH_SIZE - 1); i < num; i++) {
 			InsertOne(key[i + i], key[i + i + 1], bf);
 		}
 	}
