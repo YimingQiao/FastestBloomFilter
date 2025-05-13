@@ -13,10 +13,12 @@ namespace bloom_filters {
 class RegisterBlockedBF64Bit {
 public:
 	const uint64_t MAX_NUM_BLOCKS = (1ULL << 40);
+	static constexpr auto MIN_NUM_BITS = 512;
 
 public:
 	explicit RegisterBlockedBF64Bit(size_t n_key, uint32_t n_bits_per_key) {
-		num_blocks = ((n_key * n_bits_per_key) >> 6) + 1;
+		uint32_t min_bits = std::max<uint32_t>(MIN_NUM_BITS, n_key * n_bits_per_key);
+		num_blocks = (min_bits >> 6) + 1;
 		num_blocks_log = static_cast<uint32_t>(std::log2(num_blocks)) + 1;
 		num_blocks = std::min(static_cast<uint64_t>(1ULL << num_blocks_log), MAX_NUM_BLOCKS);
 
@@ -38,7 +40,8 @@ public:
 		for (size_t i = 0; i < num; i++) {
 			uint32_t block = (key[i] >> 40) & (num_blocks - 1);
 			uint64_t mask = (1ULL << (key[i] & 63)) | (1ULL << ((key[i] >> 6) & 63)) | (1ULL << ((key[i] >> 12) & 63)) |
-			                (1ULL << ((key[i] >> 18) & 63)) | (1ULL << ((key[i] >> 24) & 63)) | (1ULL << ((key[i] >> 32) & 63));
+			                (1ULL << ((key[i] >> 18) & 63)) | (1ULL << ((key[i] >> 24) & 63)) |
+			                (1ULL << ((key[i] >> 32) & 63));
 			bf[block] |= mask;
 		}
 	}
@@ -47,7 +50,8 @@ public:
 		for (size_t i = 0; i < num; i++) {
 			uint32_t block = (key[i] >> 40) & (num_blocks - 1);
 			uint64_t mask = (1ULL << (key[i] & 63)) | (1ULL << ((key[i] >> 6) & 63)) | (1ULL << ((key[i] >> 12) & 63)) |
-			                (1ULL << ((key[i] >> 18) & 63)) | (1ULL << ((key[i] >> 24) & 63)) | (1ULL << ((key[i] >> 32) & 63));
+			                (1ULL << ((key[i] >> 18) & 63)) | (1ULL << ((key[i] >> 24) & 63)) |
+			                (1ULL << ((key[i] >> 32) & 63));
 			out[i] = (bf[block] & mask) == mask;
 		}
 		return num;

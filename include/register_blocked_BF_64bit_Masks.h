@@ -125,10 +125,12 @@ const static BloomFilterMasks masks_;
 class RegisterBlockedBF64BitMasks {
 public:
 	const uint64_t MAX_NUM_BLOCKS = (1UL << 40);
+	static constexpr auto MIN_NUM_BITS = 512;
 
 public:
 	explicit RegisterBlockedBF64BitMasks(size_t n_key, uint32_t n_bits_per_key) {
-		num_blocks = ((n_key * n_bits_per_key) >> 6) + 1;
+		uint32_t min_bits = std::max<uint32_t>(MIN_NUM_BITS, n_key * n_bits_per_key);
+		num_blocks = (min_bits >> 6) + 1;
 		num_blocks_log = static_cast<uint32_t>(std::log2(num_blocks)) + 1;
 		num_blocks = std::min(static_cast<uint64_t>(1ULL << num_blocks_log), MAX_NUM_BLOCKS);
 
