@@ -1,10 +1,12 @@
+#include "base.h"
+
 #include <cmath>
 #include <cstring>
 #include <cstdint>
 #include <iostream>
 #include <vector>
 
-#define BF_RESTRICT          __restrict__
+#define BF_RESTRICT __restrict__
 
 namespace bloom_filters {
 class CacheSectorizedBF32Bit {
