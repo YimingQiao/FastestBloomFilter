@@ -1,6 +1,6 @@
-# FastestBloomFilter
+# Fastest-Bloom-Filter
 
-FastestBloomFilter is a high-performance C++ library that implements various Bloom filter designs, each optimized for specific use cases. The library provides a unified interface for all Bloom filter implementations, enabling seamless integration and easy benchmarking.
+Fastest-Bloom-Filter is a high-performance C++ library that implements various Bloom filter designs, each optimized for specific use cases. The library provides a unified interface for all Bloom filter implementations, enabling seamless integration and easy benchmarking.
 
 ## Features
 
@@ -37,8 +37,8 @@ To build the project, follow these steps:
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/YimingQiao/FastestBloomFilter.git
-   cd FastestBloomFilter
+   git clone https://github.com/YimingQiao/Fastest-Bloom-Filter.git
+   cd Fastest-Bloom-Filter
    ```
 
 2. Create a build directory and navigate into it:
@@ -48,7 +48,14 @@ To build the project, follow these steps:
    cd build
    ```
 
-3. Configure the project using CMake:
+3. Configure the project using CMake. To enable or disable AVX-512 optimizations, modify the `USE_AVX512` option directly in the `CMakeLists.txt` file:
+
+   ```cmake
+   # In CMakeLists.txt
+   option(USE_AVX512 "Enable AVX-512 optimizations" ON) # Set to OFF to disable
+   ```
+
+   After modifying the file, run:
 
    ```bash
    cmake ..
@@ -104,13 +111,13 @@ int main() {
 The repository includes a benchmarking tool (`main_benchmark.cpp`) to evaluate the performance of different Bloom filter implementations. You can run the benchmark manually with the following command:
 
 ```bash
-./FastestBloomFilter <num_keys> <num_bits_per_key> <num_lookup_times>
+./Fastest-Bloom-Filter <num_keys> <num_bits_per_key> <num_lookup_times>
 ```
 
 For example:
 
 ```bash
-./FastestBloomFilter 15 16 26
+./Fastest-Bloom-Filter 15 16 26
 ```
 
 This command benchmarks the Bloom filters with 2<sup>15</sup> keys, 16 bits per key, and 2<sup>26</sup> lookup operations.

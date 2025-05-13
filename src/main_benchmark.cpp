@@ -1,18 +1,19 @@
 #include "base.h"
-#include "new_cache_sectorized_BF_32bit.h"
 #include "register_blocked_BF_32bit.h"
 #include "register_blocked_BF_64bit.h"
 #include "register_blocked_BF_32bit_Masks.h"
 #include "register_blocked_BF_64bit_Masks.h"
 #include "register_blocked_BF_2x32bit.h"
-#include "cache_sectorized_BF_64bit.h"
 #include "cache_sectorized_BF_32bit.h"
+#include "new_cache_sectorized_BF_32bit.h"
 
 #include <cstdint>
 #include <iostream>
-#include <chrono> // added for cross-platform timing
+
 #ifdef __x86_64__
 #include <x86intrin.h>
+#else
+#include <chrono> // added for cross-platform timing
 #endif
 
 // Insert the GetCycleCount helper
@@ -61,8 +62,7 @@ void RunBenchmark(const std::string &title, size_t num_bits_per_key, size_t num_
 			}
 		}
 		if (positives != num_keys) {
-			std::cout << "ERROR: Correctness check failed! Passed queries: " << positives << "/" << num_keys
-			          << std::endl;
+			std::cout << "ERROR: Correctness check failed! Passed queries: " << positives << "/" << num_keys << '\n';
 		}
 	}
 
@@ -135,9 +135,6 @@ int main(int argc, char *argv[]) {
 
 	RunBenchmark<bloom_filters::RegisterBlockedBF2x32Bit, uint64_t>("2x32-bit Vectorized Register-Blocked BF",
 	                                                                num_bits_per_key, num_keys, num_lookup_times);
-
-	// RunBenchmark<bloom_filters::CacheSectorizedBF64Bit, uint64_t>("64-bit Vectorized Cache-sectorized BF",
-	//                                                               num_bits_per_key, num_keys, num_lookup_times);
 
 	RunBenchmark<bloom_filters::CacheSectorizedBF32Bit, uint64_t>("32-bit Vectorized Cache-sectorized BF",
 	                                                              num_bits_per_key, num_keys, num_lookup_times);
