@@ -12,7 +12,10 @@ endif()
 
 # Reset option to default value every time CMake is run
 unset(USE_AVX512 CACHE)
-option(USE_AVX512 "Enable AVX-512 optimizations" ON)
+option(USE_AVX512 "Enable AVX-512 optimizations" OFF)
+
+unset(USE_AVX2 CACHE)
+option(USE_AVX2 "Enable AVX2 optimizations" ON)
 
 if(USE_AVX512)
     message(STATUS "AVX-512 optimizations enabled")
@@ -24,6 +27,14 @@ endif()
 if(USE_AVX512)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx512f")
 endif()
+
+# Conditionally add AVX2 compiler flags
+if (USE_AVX2)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx2")
+endif()
+
+# Set -O1 optimization for Release mode
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 
 # Add include directories
 include_directories(include)

@@ -6,6 +6,8 @@
 #include "register_blocked_BF_2x32bit.h"
 #include "cache_sectorized_BF_32bit.h"
 #include "new_cache_sectorized_BF_32bit.h"
+#include "impala_blocked_BF_64bit.h"
+#include "impala_blocked_BF_64bit_avx512.h"
 
 #include <cstdint>
 #include <iostream>
@@ -57,8 +59,10 @@ void RunBenchmark(const std::string &title, size_t num_bits_per_key, size_t num_
 		bf.Lookup(num_keys, hashes.data(), out.data());
 		size_t positives = 0;
 		for (size_t i = 0; i < num_keys; i++) {
-			if (out[i]) {
+			if (out[i] != 0) {
 				positives++;
+			} else {
+				std::cout << out[i] << "\t";
 			}
 		}
 		if (positives != num_keys) {
@@ -115,9 +119,9 @@ void ParseArgs(int argc, char *argv[], size_t &num_keys, size_t &num_bits_per_ke
 }
 
 int main(int argc, char *argv[]) {
-	size_t num_keys = (1 << 15);
-	size_t num_bits_per_key = 16;
-	size_t num_lookup_times = std::max(1UL << 26, num_keys);
+	size_t num_keys = (1 << 17);
+	size_t num_bits_per_key = 24;
+	size_t num_lookup_times = std::max(1UL << 24, num_keys);
 
 	ParseArgs(argc, argv, num_keys, num_bits_per_key, num_lookup_times);
 
@@ -126,7 +130,7 @@ int main(int argc, char *argv[]) {
 
 	RunBenchmark<bloom_filters::RegisterBlockedBF32BitMasks, uint32_t>(
 	    "32-bit Vectorized Register-Blocked BF with Masks", num_bits_per_key, num_keys, num_lookup_times);
-
+	
 	RunBenchmark<bloom_filters::RegisterBlockedBF64Bit, uint64_t>("64-bit Vectorized Register-Blocked BF",
 	                                                              num_bits_per_key, num_keys, num_lookup_times);
 
@@ -142,6 +146,12 @@ int main(int argc, char *argv[]) {
 	RunBenchmark<bloom_filters::NewCacheSectorizedBF32Bit, uint64_t>(
 	    "New 32-bit Vectorized Cache-sectorized BF (based on Peter's version)", num_bits_per_key, num_keys,
 	    num_lookup_times);
+
+	// RunBenchmark<bloom_filters::ImpalaBlockedBF64Bit, uint64_t>("Impala Blocked BF", num_bits_per_key, num_keys,
+	// 	num_lookup_times);
+
+	// RunBenchmark<bloom_filters::ImpalaBlockedBF64BitAVX512, uint64_t>("Impala Blocked BF", num_bits_per_key, num_keys,
+	// 	num_lookup_times);
 
 	return 0;
 }
